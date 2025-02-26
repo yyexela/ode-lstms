@@ -1,0 +1,11 @@
+# pyenv install 3.11.1
+# pyenv local 3.11.1
+# Tensorflow requires Python 3.8-3.11 (https://www.tensorflow.org/install
+numpy==2.2.3
+pytorch_lightning==2.5.0.post0
+tensorflow==2.18.0
+tensorflow_probability==0.25.0
+torch==2.6.0+cu118
+torchdyn==1.0.6
+torcheval==0.0.7
+tqdm==4.67.1

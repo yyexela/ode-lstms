@@ -2,10 +2,9 @@
 
 import torch
 import torch.nn as nn
-from torchdyn.models import NeuralDE
+from torchdyn.core import NeuralODE
 import pytorch_lightning as pl
-from pytorch_lightning.metrics.functional import accuracy
-
+from torcheval.metrics.functional import binary_accuracy
 
 class ODELSTMCell(nn.Module):
     def __init__(self, input_size, hidden_size, solver_type="dopri5"):
@@ -22,7 +21,7 @@ class ODELSTMCell(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         if not self.fixed_step_solver:
-            self.node = NeuralDE(self.f_node, solver=solver_type)
+            self.node = NeuralODE(self.f_node, solver=solver_type)
         else:
             options = {
                 "fixed_euler": self.euler,
@@ -136,7 +135,7 @@ class IrregularSequenceLearner(pl.LightningModule):
         y = y.view(-1)
         loss = nn.CrossEntropyLoss()(y_hat, y)
         preds = torch.argmax(y_hat.detach(), dim=-1)
-        acc = accuracy(preds, y)
+        acc = binary_accuracy(preds, y)
         self.log("train_acc", acc, prog_bar=True)
         self.log("train_loss", loss, prog_bar=True)
         return {"loss": loss}
@@ -154,7 +153,7 @@ class IrregularSequenceLearner(pl.LightningModule):
         loss = nn.CrossEntropyLoss()(y_hat, y)
 
         preds = torch.argmax(y_hat, dim=1)
-        acc = accuracy(preds, y)
+        acc = binary_accuracy(preds, y)
 
         self.log("val_loss", loss, prog_bar=True)
         self.log("val_acc", acc, prog_bar=True)

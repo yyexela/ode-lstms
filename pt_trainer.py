@@ -67,9 +67,10 @@ ode_lstm = ODELSTM(
 learn = IrregularSequenceLearner(ode_lstm, lr=args.lr)
 trainer = pl.Trainer(
     max_epochs=args.epochs,
-    progress_bar_refresh_rate=1,
+    #progress_bar_refresh_rate=1,
     gradient_clip_val=1,
-    gpus=args.gpus,
+    devices=args.gpus,
+    accelerator="gpu",
 )
 trainer.fit(learn, trainloader)
 
