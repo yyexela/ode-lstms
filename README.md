@@ -1,6 +1,7 @@
 # Learning Long-Term Dependencies in Irregularly-Sampled Time Series
 
-This is the official code repository of the paper *Learning Long-Term Dependencies in Irregularly-Sampled Time Series* [[arXiv link]](https://arxiv.org/pdf/2006.04418.pdf).
+This is the **not** official code repository of the paper *Learning Long-Term Dependencies in Irregularly-Sampled Time Series* [[arXiv link]](https://arxiv.org/pdf/2006.04418.pdf).
+The official repository is found [[here]](https://github.com/mlech26l/ode-lstms).
 
 ![alt](misc/state_table.png)
 
