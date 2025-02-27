@@ -14,7 +14,7 @@ parser.add_argument("--solver", default="dopri5")
 parser.add_argument("--size", default=64, type=int)
 parser.add_argument("--epochs", default=100, type=int)
 parser.add_argument("--lr", default=0.01, type=float)
-parser.add_argument("--gpus", default=0, type=int)
+parser.add_argument("--gpus", default=0, nargs="+", type=int)
 args = parser.parse_args()
 
 

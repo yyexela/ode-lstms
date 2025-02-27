@@ -130,6 +130,7 @@ dmypy.json
 
 # Datasets
 data
+dataset
 
 # Lightning
 lightning_logs
