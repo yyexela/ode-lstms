@@ -54,24 +54,26 @@ def load_dataset(args):
     num_classes = int(torch.max(train_y).item() + 1)
     return trainloader, testloader, in_features, num_classes, return_sequences
 
-
 trainloader, testloader, in_features, num_classes, return_sequences = load_dataset(args)
 
 ode_lstm = ODELSTM(
     in_features,
-    args.size,
+    args.size, # hidden state size
     num_classes,
     return_sequences=return_sequences,
     solver_type=args.solver,
 )
+
 learn = IrregularSequenceLearner(ode_lstm, lr=args.lr)
+
 trainer = pl.Trainer(
     max_epochs=args.epochs,
-    #progress_bar_refresh_rate=1,
+    #progress_bar_refresh_rate=1, # Deprecated
     gradient_clip_val=1,
     devices=args.gpus,
     accelerator="gpu",
 )
+
 trainer.fit(learn, trainloader)
 
 results = trainer.test(learn, testloader)
