@@ -119,10 +119,17 @@ class ODELSTM(nn.Module):
 
 
 class IrregularSequenceLearner(pl.LightningModule):
-    def __init__(self, model, lr=0.005):
+    def __init__(self, model, lr=0.005, classification_task=True):
+        """
+        model: LSTM model to train
+        lr: learning rate
+        classification_task: True if doing a classification task (default)
+                        False if doing MSE (time-series forecasting)
+        """
         super().__init__()
         self.model = model
         self.lr = lr
+        self.classification_task = classification_task
 
     def training_step(self, batch, batch_idx):
         if len(batch) == 4:
@@ -131,13 +138,17 @@ class IrregularSequenceLearner(pl.LightningModule):
             x, t, y = batch
             mask = None
         y_hat = self.model.forward(x, t, mask)
-        y_hat = y_hat.view(-1, y_hat.size(-1))
-        y = y.view(-1)
-        loss = nn.CrossEntropyLoss()(y_hat, y)
-        preds = torch.argmax(y_hat.detach(), dim=-1)
-        acc = binary_accuracy(preds, y)
-        self.log("train_acc", acc, prog_bar=True)
-        self.log("train_loss", loss, prog_bar=True)
+        if self.classification_task:
+            y_hat = y_hat.view(-1, y_hat.size(-1))
+            y = y.view(-1)
+            loss = nn.CrossEntropyLoss()(y_hat, y)
+            preds = torch.argmax(y_hat.detach(), dim=-1)
+            acc = binary_accuracy(preds, y)
+            self.log("train_acc", acc, prog_bar=True)
+            self.log("train_loss", loss.cpu().item(), prog_bar=True)
+        else:
+            loss = nn.MSELoss()(y_hat, y)
+            self.log("train_loss", loss.cpu().item(), prog_bar=True)
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
@@ -147,16 +158,20 @@ class IrregularSequenceLearner(pl.LightningModule):
             x, t, y = batch
             mask = None
         y_hat = self.model.forward(x, t, mask)
-        y_hat = y_hat.view(-1, y_hat.size(-1))
-        y = y.view(-1)
+        if self.classification_task:
+            y_hat = y_hat.view(-1, y_hat.size(-1))
+            y = y.view(-1)
 
-        loss = nn.CrossEntropyLoss()(y_hat, y)
+            loss = nn.CrossEntropyLoss()(y_hat, y)
 
-        preds = torch.argmax(y_hat, dim=1)
-        acc = binary_accuracy(preds, y)
+            preds = torch.argmax(y_hat, dim=1)
+            acc = binary_accuracy(preds, y)
 
-        self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc", acc, prog_bar=True)
+            self.log("val_loss", loss, prog_bar=True)
+            self.log("val_acc", acc, prog_bar=True)
+        else:
+            loss = nn.MSELoss()(y_hat, y)
+            self.log("val_loss", loss.cpu().item(), prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
