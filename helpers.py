@@ -1,17 +1,31 @@
+import os
 import torch
 import numpy as np
+from tqdm import tqdm
 from scipy.io import loadmat
 import torch.utils.data as data
 from irregular_sampled_datasets import PersonData, ETSMnistData, XORData, CustomData 
 
+def get_single_file_name(directory):
+    # List all files in the directory
+    files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+    
+    # Check if there is exactly one file in the directory
+    if len(files) != 1:
+        raise ValueError(f"The directory {directory} does not contain exactly one file.")
+    
+    # Return the name of the single file
+    return files[0]
+
 def forward_model(model, train_mat, timespans, output_timesteps, device):
+    print(f"Unrolling model for {output_timesteps} timesteps")
     model.to(device)
     train_mat = train_mat.to(device)
     timespans = timespans.to(device)
 
     all_outputs = []
     cur_input = train_mat
-    for _ in range(output_timesteps):
+    for _ in tqdm(range(output_timesteps)):
         out = model.model(cur_input, timespans, None) # (1, 3)
         cur_input = torch.concatenate([cur_input[0], out])[1:,:]
         cur_input = cur_input.unsqueeze(0)
@@ -68,6 +82,7 @@ def load_dataset_trainer(args):
         train = data.TensorDataset(train_x, train_ts, train_y)
         test = data.TensorDataset(test_x, test_ts, test_y)
         return_sequences = True
+        batch_size = 64
     elif args.dataset in ["ODE_Lorenz", "PDE_KS"]:
         return_sequences = False
         dataset = CustomData(args)
@@ -79,6 +94,7 @@ def load_dataset_trainer(args):
         test_ts = torch.Tensor(dataset.test_elapsed)
         train = data.TensorDataset(train_x, train_ts, train_y)
         test = data.TensorDataset(test_x, test_ts, test_y)
+        batch_size = train_x.shape[0]
     else:
         if args.dataset == "et_mnist":
             dataset = ETSMnistData(time_major=False)
@@ -97,11 +113,12 @@ def load_dataset_trainer(args):
         test_mask = torch.Tensor(dataset.test_mask)
         train = data.TensorDataset(train_x, train_ts, train_y, train_mask)
         test = data.TensorDataset(test_x, test_ts, test_y, test_mask)
-    trainloader = data.DataLoader(train, batch_size=64, shuffle=True, num_workers=4)
-    testloader = data.DataLoader(test, batch_size=64, shuffle=False, num_workers=4)
+        batch_size = 64
+    trainloader = data.DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=4)
+    testloader = data.DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=4)
     in_features = train_x.size(-1)
     num_classes = train_x.shape[2] if args.dataset in ["ODE_Lorenz", "PDE_KS"] else int(torch.max(train_y).item() + 1)
-    return trainloader, testloader, in_features, num_classes, return_sequences
+    return trainloader, testloader, in_features, num_classes, return_sequences, batch_size
 
 
 # ODE LSTMS

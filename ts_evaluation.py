@@ -1,8 +1,10 @@
 # Copyright 2021 The ODE-LSTM Authors. All Rights Reserved.
 
+import os
 import torch
 import helpers
 import argparse
+import numpy as np
 from torch_node_cell import IrregularSequenceLearner
 
 parser = argparse.ArgumentParser()
@@ -18,9 +20,16 @@ seq_len = args.seq_length
 train_mat, test_mat = helpers.load_dataset_raw(args)
 train_mat_in, _, timespans_in = helpers.load_dataset_lstm_input(args, seq_len = seq_len)
 
-model = IrregularSequenceLearner.load_from_checkpoint("lightning_logs/version_8/checkpoints/epoch=1-step=30.ckpt")
+version = 13
+ckpt_dir = f"lightning_logs/version_{version}/checkpoints/"
+ckpt_name = helpers.get_single_file_name(ckpt_dir)
+ckpt_path = os.path.join(ckpt_dir, ckpt_name)
+model = IrregularSequenceLearner.load_from_checkpoint(ckpt_path)
+
 
 output_timesteps = test_mat.shape[0]
 output = helpers.forward_model(model, train_mat_in, timespans_in, output_timesteps, model.device)
+
+np.save(f'{model.hp_dict["dataset_dict"]["matrix_id"]}.npy', output.detach().cpu())
 
 print("Done!")

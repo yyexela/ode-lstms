@@ -119,7 +119,7 @@ class ODELSTM(nn.Module):
 
 
 class IrregularSequenceLearner(pl.LightningModule):
-    def __init__(self, model, lr=0.005, classification_task=True):
+    def __init__(self, model, lr=0.005, classification_task=True, hp_dict=None):
         """
         model: LSTM model to train
         lr: learning rate
@@ -131,6 +131,7 @@ class IrregularSequenceLearner(pl.LightningModule):
         self.model = model
         self.lr = lr
         self.classification_task = classification_task
+        self.hp_dict = hp_dict
 
     def training_step(self, batch, batch_idx):
         if len(batch) == 4:
