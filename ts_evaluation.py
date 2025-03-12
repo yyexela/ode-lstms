@@ -20,7 +20,7 @@ seq_len = args.seq_length
 train_mat, test_mat = helpers.load_dataset_raw(args)
 train_mat_in, _, timespans_in = helpers.load_dataset_lstm_input(args, seq_len = seq_len)
 
-version = 13
+version = 0
 ckpt_dir = f"lightning_logs/version_{version}/checkpoints/"
 ckpt_name = helpers.get_single_file_name(ckpt_dir)
 ckpt_path = os.path.join(ckpt_dir, ckpt_name)
@@ -30,6 +30,6 @@ model = IrregularSequenceLearner.load_from_checkpoint(ckpt_path)
 output_timesteps = test_mat.shape[0]
 output = helpers.forward_model(model, train_mat_in, timespans_in, output_timesteps, model.device)
 
-np.save(f'{model.hp_dict["dataset_dict"]["matrix_id"]}.npy', output.detach().cpu())
+np.save(f'{model.hp_dict["dataset_dict"]["matrix_id"]}_{version}.npy', output.detach().cpu())
 
 print("Done!")
