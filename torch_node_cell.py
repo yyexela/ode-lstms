@@ -127,6 +127,7 @@ class IrregularSequenceLearner(pl.LightningModule):
                         False if doing MSE (time-series forecasting)
         """
         super().__init__()
+        self.save_hyperparameters()
         self.model = model
         self.lr = lr
         self.classification_task = classification_task
