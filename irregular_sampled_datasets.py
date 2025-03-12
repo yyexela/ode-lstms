@@ -2,6 +2,7 @@
 
 import os
 import torch
+import helpers
 import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
@@ -543,25 +544,20 @@ class XORData:
 # train_ts.shape
 # torch.Size([100000, 32, 1])
 
-class ODELorenzData:
-    def __init__(self, seq_length, matrix_id):
+class CustomData:
+    def __init__(self, args):
         # Class variables
-        self.seq_length = seq_length
-        self.matrix_id = matrix_id
+        self.seq_length = args.seq_length
+        self.matrix_id = args.matrix_id
 
         # Load matrices
-        train_mat = loadmat(f'../../Datasets/ODE_Lorenz/{matrix_id}train.mat')
-        train_mat = train_mat[list(train_mat.keys())[-1]]
-        test_mat = loadmat(f'../../Datasets/ODE_Lorenz/{matrix_id}test.mat')
-        test_mat = test_mat[list(test_mat.keys())[-1]]
+        train_mat, test_mat = helpers.load_dataset_raw(args)
 
         self.train_events, self.train_y = self.generate_dataset(train_mat, self.seq_length)
         self.test_events, self.test_y = self.generate_dataset(test_mat, self.seq_length)
 
         self.train_elapsed = np.ones((self.train_events.shape[0], self.train_events.shape[1], 1))/self.seq_length
         self.test_elapsed = np.ones((self.test_events.shape[0], self.test_events.shape[1], 1))/self.seq_length
-        #self.train_mask = np.ones_like(self.train_events)
-        #self.test_mask = np.ones_like(self.test_events)
 
         return None
 
@@ -572,16 +568,15 @@ class ODELorenzData:
         2) N matrices of shape 1 by 1, which are the next time-series value to predict
         """
 
-        N = input_mat.shape[1]-seq_length
+        N = input_mat.shape[0]-seq_length
 
         X = []
         y = []
         for i in range(0, N):
-            X.append(input_mat[:, i:i+seq_length])
-            y.append(input_mat[:, i+seq_length])
+            X.append(input_mat[i:i+seq_length, :])
+            y.append(input_mat[i+seq_length, :])
 
         Xs = np.stack(X).astype(np.float32)
-        Xs = np.swapaxes(Xs, 1, 2)
 
         ys = np.stack(y).astype(np.float32)
 
