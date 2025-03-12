@@ -6,6 +6,16 @@ The official repository is found [[here]](https://github.com/mlech26l/ode-lstms)
 
 ![alt](misc/state_table.png)
 
+## Update 2025 - ODE_Lorenz and PDE_KS support
+
+To run `PDE_KS`, enter:  
+`python pt_trainer.py --dataset PDE_KS --solver fixed_rk4 --hidden_state_size 128 --epochs 1000 --gpus 2 && python ts_evaluation.py --dataset PDE_KS`  
+
+To run `ODE_Lorenz`, enter:  
+`python pt_trainer.py --dataset ODE_Lorenz --solver fixed_rk4 --hidden_state_size 128 --epochs 1000 --gpus 2 && python ts_evaluation.py --dataset ODE_Lorenz`
+
+An output matrix `X{num}.npy` will be produced that should be compared to the testing matrix.
+
 ## Update January 2021 - PyTorch support added
 
 Efficient and flexible **PyTorch** implementation added. 
