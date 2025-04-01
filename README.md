@@ -8,6 +8,16 @@ The official repository is found [[here]](https://github.com/mlech26l/ode-lstms)
 
 ## Update 2025 - ODE_Lorenz and PDE_KS support
 
+To set up environment:
+```bash
+pyenv install 3.11.11
+pyenv local 3.11.11
+mkdir venv
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
 To run `PDE_KS`, enter:  
 `python pt_trainer.py --dataset PDE_KS --solver fixed_rk4 --hidden_state_size 128 --epochs 1000 --gpus 2 && python ts_evaluation.py --dataset PDE_KS`  
 

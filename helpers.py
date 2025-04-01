@@ -57,7 +57,7 @@ def load_dataset_lstm_input(args, seq_len):
     """
     Load dataset for input to LSTM
     """
-    if args.dataset in ["ODELorenz", "PDE_KS"]:
+    if args.dataset in ["ODE_Lorenz", "PDE_KS"]:
         train_mat, test_mat = load_dataset_raw(args)
 
         timespans = np.ones((train_mat.shape[0], 1))/seq_len
