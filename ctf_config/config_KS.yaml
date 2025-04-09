@@ -1,0 +1,16 @@
+dataset:
+  name: PDE_KS
+  pair_id: [3]
+model:
+  name: spacetime
+  seed: 0
+  solver: "fixed_rk4"
+  hidden_state_size: 128
+  seq_length: 100
+  epochs: 3
+  gradient_clip_val: 1.0
+  accelerator: "gpu"
+  log_every_n_steps: 1
+  gpu: 2
+  lr: 0.01
+  seed: 0

@@ -1,10 +1,13 @@
 import os
+from pathlib import Path
+import random
 import torch
 import numpy as np
 from tqdm import tqdm
 from scipy.io import loadmat
 import torch.utils.data as data
 from irregular_sampled_datasets import PersonData, ETSMnistData, XORData, CustomData 
+from ctf4science.data_module import load_dataset
 
 def get_single_file_name(directory):
     # List all files in the directory
@@ -34,15 +37,22 @@ def forward_model(model, train_mat, timespans, output_timesteps, device):
 
     return all_outputs_mat
 
+def seed_everything(seed):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 def load_dataset_raw(args):
     """
     Load original unprocessed dataset
     """
     if args.dataset in ["ODE_Lorenz", "PDE_KS"]:
-        train_mat = loadmat(f'../../Datasets/{args.dataset}/{args.matrix_id}train.mat')
-        train_mat = train_mat[list(train_mat.keys())[-1]]
-        test_mat = loadmat(f'../../Datasets/{args.dataset}/{args.matrix_id}test.mat')
-        test_mat = test_mat[list(test_mat.keys())[-1]]
+        train_mat, test_mat = load_dataset(args.dataset, args.matrix_id)
 
         train_mat = np.swapaxes(train_mat, 0, 1)
         test_mat = np.swapaxes(test_mat, 0, 1)

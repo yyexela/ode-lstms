@@ -7,17 +7,20 @@ from torch_node_cell import ODELSTM, IrregularSequenceLearner
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", default="person")
+parser.add_argument("--seed", default=0, type=int) # Seed
 parser.add_argument("--solver", default="dopri5")
 parser.add_argument("--hidden_state_size", default=64, type=int) # Hidden state size
 parser.add_argument("--seq_length", default=100, type=int) # Length of sequence for ODE and PDE datasets
-parser.add_argument("--matrix_id", default='X1', type=str) # Matrix X1 through X10
+parser.add_argument("--matrix_id", default='1', type=int) # Matrix X1 through X10, enter only the integer
 parser.add_argument("--epochs", default=1, type=int)
 parser.add_argument("--lr", default=0.01, type=float)
 parser.add_argument("--gradient_clip_val", default=1.00, type=float)
-parser.add_argument("--gpus_list", default=0, nargs="+", type=int) # List of GPUs to train on 
+parser.add_argument("--gpu", default=0, nargs="+", type=int) # List of GPUs to train on 
 parser.add_argument("--accelerator", default="gpu", type=str)
 parser.add_argument("--log_every_n_steps", default=1, type=int)
 args = parser.parse_args()
+
+helpers.seed_everything(args.seed)
 
 classification_task = args.dataset in ["et_mnist", "xor", "person"]
 
@@ -45,7 +48,7 @@ hp_dict = {
     "trainer_dict": {
         "max_epochs": args.epochs,
         "gradient_clip_val": args.gradient_clip_val,
-        "devices": args.gpus_list,
+        "devices": args.gpu,
         "accelerator": args.accelerator,
         "log_every_n_steps": args.log_every_n_steps
     }
@@ -69,7 +72,7 @@ trainer = pl.Trainer(
     max_epochs=args.epochs,
     #progress_bar_refresh_rate=1, # Deprecated
     gradient_clip_val=args.gradient_clip_val,
-    devices=args.gpus_list,
+    devices=args.gpu,
     accelerator=args.accelerator,
     log_every_n_steps=args.log_every_n_steps
 )

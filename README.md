@@ -19,10 +19,10 @@ pip install -r requirements.txt
 ```
 
 To run `PDE_KS`, enter:  
-`python pt_trainer.py --dataset PDE_KS --solver fixed_rk4 --hidden_state_size 128 --epochs 1000 --gpus 2 && python ts_evaluation.py --dataset PDE_KS`  
+`python pt_trainer.py --dataset PDE_KS --solver fixed_rk4 --hidden_state_size 128 --epochs 1000 --gpu 2 && python ts_evaluation.py --dataset PDE_KS`  
 
 To run `ODE_Lorenz`, enter:  
-`python pt_trainer.py --dataset ODE_Lorenz --solver fixed_rk4 --hidden_state_size 128 --epochs 1000 --gpus 2 && python ts_evaluation.py --dataset ODE_Lorenz`
+`python pt_trainer.py --dataset ODE_Lorenz --solver fixed_rk4 --hidden_state_size 128 --epochs 1000 --gpu 2 && python ts_evaluation.py --dataset ODE_Lorenz`
 
 An output matrix `X{num}.npy` will be produced that should be compared to the testing matrix.
 
