@@ -28,7 +28,7 @@ train_mat, test_mat = helpers.load_dataset_raw(args)
 train_mat_in, _, timespans_in = helpers.load_dataset_lstm_input(args, seq_len = seq_len)
 
 version = 0
-ckpt_dir = f"lightning_logs/version_{version}/checkpoints/"
+ckpt_dir = file_dir / "lightning_logs" / f"version_{version}" / "checkpoints" 
 ckpt_name = helpers.get_single_file_name(ckpt_dir)
 ckpt_path = os.path.join(ckpt_dir, ckpt_name)
 model = IrregularSequenceLearner.load_from_checkpoint(ckpt_path)

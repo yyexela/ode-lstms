@@ -2,8 +2,13 @@
 
 import argparse
 import helpers
+import shutil
 import pytorch_lightning as pl
 from torch_node_cell import ODELSTM, IrregularSequenceLearner
+from pathlib import Path
+
+# file dir
+file_dir = Path(__file__).parent
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", default="person")
@@ -54,6 +59,12 @@ hp_dict = {
     }
 }
 
+# Remove old model saves
+try:
+    shutil.rmtree(file_dir / "lightning_logs")
+except:
+    pass
+
 ode_lstm = ODELSTM(
     in_features,
     args.hidden_state_size, # hidden state size
@@ -74,7 +85,8 @@ trainer = pl.Trainer(
     gradient_clip_val=args.gradient_clip_val,
     devices=args.gpu,
     accelerator=args.accelerator,
-    log_every_n_steps=args.log_every_n_steps
+    log_every_n_steps=args.log_every_n_steps,
+    default_root_dir=str(file_dir)
 )
 
 trainer.fit(learn, trainloader)
