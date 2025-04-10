@@ -13,6 +13,7 @@ file_dir = Path(__file__).parent
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", default="person")
 parser.add_argument("--seed", default=0, type=int) # Seed
+parser.add_argument("--model", default="ode-lstms")
 parser.add_argument("--solver", default="dopri5")
 parser.add_argument("--hidden_state_size", default=64, type=int) # Hidden state size
 parser.add_argument("--seq_length", default=100, type=int) # Length of sequence for ODE and PDE datasets
@@ -44,6 +45,7 @@ hp_dict = {
         "out_features": out_features,
         "hidden_state_size": args.hidden_state_size,
         "return_sequences": return_sequences,
+        "model": args.model,
         "solver": args.solver
     },
     "learner_dict": {
@@ -71,6 +73,7 @@ ode_lstm = ODELSTM(
     out_features,
     return_sequences=return_sequences,
     solver_type=args.solver,
+    model=args.model
 )
 
 learn = IrregularSequenceLearner(

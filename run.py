@@ -59,6 +59,7 @@ def main(config_path: str) -> None:
     {ode_lorenz_main_path}\
     --dataset {dataset}\
     --seed {seed}\
+    --model {model}\
     --solver {solver}\
     --hidden_state_size {hidden_state_size}\
     --train_ids {train_ids}\
@@ -75,6 +76,7 @@ def main(config_path: str) -> None:
         ode_lorenz_main_path = file_dir / "pt_trainer.py",
         dataset = config['dataset']['name'],
         seed = config['model']['seed'],
+        model = config['model']['model'],
         solver = config['model']['solver'],
         hidden_state_size = config['model']['hidden_state_size'],
         train_ids = ' '.join([str(i) for i in config['dataset']['train_ids']]),

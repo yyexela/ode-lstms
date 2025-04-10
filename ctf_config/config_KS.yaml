@@ -7,6 +7,7 @@ dataset:
 model:
   name: spacetime
   seed: 0
+  model: "ode-lstm" # ode-lstm or lstm
   solver: "fixed_rk4"
   hidden_state_size: 128
   seq_length: 100

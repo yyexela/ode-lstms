@@ -7,44 +7,49 @@ import pytorch_lightning as pl
 from torcheval.metrics.functional import binary_accuracy
 
 class ODELSTMCell(nn.Module):
-    def __init__(self, input_size, hidden_size, solver_type="dopri5"):
+    def __init__(self, input_size, hidden_size, solver_type="dopri5", model="ode-lstm"):
         super(ODELSTMCell, self).__init__()
         self.solver_type = solver_type
-        self.fixed_step_solver = solver_type.startswith("fixed_")
+        self.model = model
+        assert self.model in ['ode-lstm', 'lstm']
+        if self.model == "ode-lstm":
+            self.fixed_step_solver = solver_type.startswith("fixed_")
         self.lstm = nn.LSTMCell(input_size, hidden_size)
-        # 1 hidden layer NODE
-        self.f_node = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
-            nn.Tanh(),
-            nn.Linear(hidden_size, hidden_size),
-        )
         self.input_size = input_size
         self.hidden_size = hidden_size
-        if not self.fixed_step_solver:
-            self.node = NeuralODE(self.f_node, solver=solver_type)
-        else:
-            options = {
-                "fixed_euler": self.euler,
-                "fixed_heun": self.heun,
-                "fixed_rk4": self.rk4,
-            }
-            if not solver_type in options.keys():
-                raise ValueError("Unknown solver type '{:}'".format(solver_type))
-            self.node = options[self.solver_type]
+        if self.model == "ode-lstm":
+            # 1 hidden layer NODE
+            self.f_node = nn.Sequential(
+                nn.Linear(hidden_size, hidden_size),
+                nn.Tanh(),
+                nn.Linear(hidden_size, hidden_size),
+            )
+            if not self.fixed_step_solver:
+                self.node = NeuralODE(self.f_node, solver=solver_type)
+            else:
+                options = {
+                    "fixed_euler": self.euler,
+                    "fixed_heun": self.heun,
+                    "fixed_rk4": self.rk4,
+                }
+                if not solver_type in options.keys():
+                    raise ValueError("Unknown solver type '{:}'".format(solver_type))
+                self.node = options[self.solver_type]
 
     def forward(self, input, hx, ts):
         new_h, new_c = self.lstm(input, hx)
-        if self.fixed_step_solver:
-            new_h = self.solve_fixed(new_h, ts)
-        else:
-            indices = torch.argsort(ts)
-            batch_size = ts.size(0)
-            device = input.device
-            s_sort = ts[indices]
-            s_sort = s_sort + torch.linspace(0, 1e-4, batch_size, device=device)
-            # HACK: Make sure no two points are equal
-            trajectory = self.node.trajectory(new_h, s_sort)
-            new_h = trajectory[indices, torch.arange(batch_size, device=device)]
+        if self.model == "ode-lstm":
+            if self.fixed_step_solver:
+                new_h = self.solve_fixed(new_h, ts)
+            else:
+                indices = torch.argsort(ts)
+                batch_size = ts.size(0)
+                device = input.device
+                s_sort = ts[indices]
+                s_sort = s_sort + torch.linspace(0, 1e-4, batch_size, device=device)
+                # HACK: Make sure no two points are equal
+                trajectory = self.node.trajectory(new_h, s_sort)
+                new_h = trajectory[indices, torch.arange(batch_size, device=device)]
 
         return (new_h, new_c)
 
@@ -80,14 +85,18 @@ class ODELSTM(nn.Module):
         out_feature,
         return_sequences=True,
         solver_type="dopri5",
+        model="ode-lstm"
     ):
         super(ODELSTM, self).__init__()
         self.in_features = in_features
         self.hidden_size = hidden_size
         self.out_feature = out_feature
         self.return_sequences = return_sequences
+        self.model = model
 
-        self.rnn_cell = ODELSTMCell(in_features, hidden_size, solver_type=solver_type)
+        assert self.model in ['ode-lstm', 'lstm']
+
+        self.rnn_cell = ODELSTMCell(in_features, hidden_size, solver_type=solver_type, model=model)
         self.fc = nn.Linear(self.hidden_size, self.out_feature)
 
     def forward(self, x, timespans, mask=None):
