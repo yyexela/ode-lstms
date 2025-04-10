@@ -16,7 +16,7 @@ parser.add_argument("--seed", default=0, type=int) # Seed
 parser.add_argument("--solver", default="dopri5")
 parser.add_argument("--hidden_state_size", default=64, type=int) # Hidden state size
 parser.add_argument("--seq_length", default=100, type=int) # Length of sequence for ODE and PDE datasets
-parser.add_argument("--matrix_id", default='1', type=int) # Matrix X1 through X10, enter only the integer
+parser.add_argument("--train_ids", default=[1], nargs="+", type=int) # Matrices X1 through X10, enter a list of integers
 parser.add_argument("--epochs", default=1, type=int)
 parser.add_argument("--lr", default=0.01, type=float)
 parser.add_argument("--gradient_clip_val", default=1.00, type=float)
@@ -36,7 +36,7 @@ hp_dict = {
     "dataset_dict": {
         "dataset": args.dataset,
         "batch_size": batch_size,
-        "matrix_id": args.matrix_id,
+        "train_ids": args.train_ids,
         "seq_length": args.seq_length
     },
     "model_dict": {
@@ -91,4 +91,5 @@ trainer = pl.Trainer(
 
 trainer.fit(learn, trainloader)
 
-results = trainer.test(learn, testloader)
+if args.dataset not in ["ODE_Lorenz", "PDE_KS"]:
+    results = trainer.test(learn, testloader)

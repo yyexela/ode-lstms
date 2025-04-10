@@ -47,12 +47,12 @@ def seed_everything(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def load_dataset_raw(args):
+def load_dataset_raw(dataset, matrix_id):
     """
     Load original unprocessed dataset
     """
-    if args.dataset in ["ODE_Lorenz", "PDE_KS"]:
-        train_mat, test_mat = load_dataset(args.dataset, args.matrix_id)
+    if dataset in ["ODE_Lorenz", "PDE_KS"]:
+        train_mat, test_mat = load_dataset(dataset, matrix_id)
 
         train_mat = np.swapaxes(train_mat, 0, 1)
         test_mat = np.swapaxes(test_mat, 0, 1)
@@ -60,25 +60,23 @@ def load_dataset_raw(args):
         train_mat = torch.Tensor(train_mat.astype(np.float32))
         test_mat = torch.Tensor(test_mat.astype(np.float32))
     else:
-        raise Exception(f"Timeseries dataset {args.dataset} not found")
+        raise Exception(f"Timeseries dataset {dataset} not found")
     return train_mat, test_mat
 
-def load_dataset_lstm_input(args, seq_len):
+def load_dataset_lstm_input(dataset, matrix_id, seq_len):
     """
-    Load dataset for input to LSTM
+    Load dataset for input to LSTM during evaluation
     """
-    if args.dataset in ["ODE_Lorenz", "PDE_KS"]:
-        train_mat, test_mat = load_dataset_raw(args)
-
-        timespans = np.ones((train_mat.shape[0], 1))/seq_len
+    if dataset in ["ODE_Lorenz", "PDE_KS"]:
+        _, test_mat = load_dataset_raw(dataset, matrix_id)
+        timespans = np.ones((test_mat.shape[0], 1))/seq_len
         timespans = torch.Tensor(timespans.astype(np.float32))
-
-        train_mat = torch.unsqueeze(train_mat[-seq_len:,:],0)
+        test_mat_shape = test_mat.shape
         test_mat = torch.unsqueeze(test_mat[-seq_len:,:],0)
         timespans = torch.unsqueeze(timespans[-seq_len:,:],0)
     else:
-        raise Exception(f"Timeseries dataset {args.dataset} not found")
-    return train_mat, test_mat, timespans
+        raise Exception(f"Timeseries dataset {dataset} not found")
+    return test_mat, timespans, test_mat_shape
 
 def load_dataset_trainer(args):
     if args.dataset == "person":

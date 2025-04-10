@@ -1,6 +1,7 @@
 import os
 import yaml
 import time
+import torch
 import argparse
 import datetime
 import numpy as np
@@ -28,7 +29,7 @@ def main(config_path: str) -> None:
 
     # Load prepare command to execute
     dataset_name = config['dataset']['name']
-    pair_ids = parse_pair_ids(config['dataset'])
+    matrix_ids = [1,2]
 
     model_name = f"{config['model']['name']}"
 
@@ -51,94 +52,98 @@ def main(config_path: str) -> None:
     applicable_plots = get_applicable_plots(dataset_name)
 
     # Process each sub-dataset
-    for pair_id in pair_ids:
-        # Prepare commands
-        cmd_1 = \
-        """\
-        python\
-        {ode_lorenz_main_path}\
-        --dataset {dataset}\
-        --seed {seed}\
-        --solver {solver}\
-        --hidden_state_size {hidden_state_size}\
-        --seq_length {seq_length}\
-        --matrix_id {matrix_id}\
-        --epochs {epochs}\
-        --lr {lr}\
-        --gradient_clip_val {gradient_clip_val}\
-        --gpu {gpu}\
-        --accelerator {accelerator}\
-        --log_every_n_steps {log_every_n_steps}\
-        """
+    # Prepare commands
+    cmd_1 = \
+    """\
+    python\
+    {ode_lorenz_main_path}\
+    --dataset {dataset}\
+    --seed {seed}\
+    --solver {solver}\
+    --hidden_state_size {hidden_state_size}\
+    --train_ids {train_ids}\
+    --seq_length {seq_length}\
+    --gradient_clip_val {gradient_clip_val}\
+    --accelerator {accelerator}\
+    --log_every_n_steps {log_every_n_steps}\
+    --epochs {epochs}\
+    --gpu {gpu}\
+    --lr {lr}\
+    """
 
-        cmd_formatted_1 = cmd_1.format(
-            ode_lorenz_main_path = file_dir / "pt_trainer.py",
-            dataset = config['dataset']['name'],
-            seed = config['model']['seed'],
-            solver = config['model']['solver'],
-            hidden_state_size = config['model']['hidden_state_size'],
-            seq_length = config['model']['seq_length'],
-            matrix_id = pair_id,
-            epochs = config['model']['epochs'],
-            lr = config['model']['lr'],
-            gradient_clip_val = config['model']['gradient_clip_val'],
-            gpu = config['model']['gpu'],
-            accelerator = config['model']['accelerator'],
-            log_every_n_steps = config['model']['log_every_n_steps'],
-        )
+    cmd_formatted_1 = cmd_1.format(
+        ode_lorenz_main_path = file_dir / "pt_trainer.py",
+        dataset = config['dataset']['name'],
+        seed = config['model']['seed'],
+        solver = config['model']['solver'],
+        hidden_state_size = config['model']['hidden_state_size'],
+        train_ids = ' '.join([str(i) for i in config['dataset']['train_ids']]),
+        seq_length = config['model']['seq_length'],
+        gradient_clip_val = config['model']['gradient_clip_val'],
+        accelerator = config['model']['accelerator'],
+        log_every_n_steps = config['model']['log_every_n_steps'],
+        epochs = config['model']['epochs'],
+        gpu = config['model']['gpu'],
+        lr = config['model']['lr'],
+    )
 
-        cmd_2 = \
-        """\
-        python\
-        {ode_lorenz_main_path}\
-        --dataset {dataset}\
-        --seed {seed}\
-        --seq_length {seq_length}\
-        --matrix_id {matrix_id}\
-        --gpu {gpu}\
-        """
+    cmd_2 = \
+    """\
+    python\
+    {ode_lorenz_main_path}\
+    --dataset {dataset}\
+    --seed {seed}\
+    --reconstruct_ids {reconstruct_ids}\
+    --forecast_ids {forecast_ids}\
+    --forecast_lengths {forecast_lengths}\
+    --seq_length {seq_length}\
+    --gpu {gpu}\
+    """
 
-        cmd_formatted_2 = cmd_2.format(
-            ode_lorenz_main_path = file_dir / "ts_evaluation.py",
-            dataset = config['dataset']['name'],
-            seed = config['model']['seed'],
-            matrix_id = pair_id,
-            gpu = config['model']['gpu'],
-            seq_length = config['model']['seq_length'],
-        )
+    cmd_formatted_2 = cmd_2.format(
+        ode_lorenz_main_path = file_dir / "ts_evaluation.py",
+        seed = config['model']['seed'],
+        dataset = config['dataset']['name'],
+        reconstruct_ids = ' '.join([str(i) for i in config['dataset']['reconstruct_ids']]),
+        forecast_ids = ' '.join([str(i) for i in config['dataset']['forecast_ids']]),
+        forecast_lengths = ' '.join([str(i) for i in config['dataset']['forecast_lengths']]),
+        seq_length = config['model']['seq_length'],
+        gpu = config['model']['gpu'],
+    )
 
-        # Execute command 1
-        print("---------------")
-        print("Python running:")
-        print(cmd_formatted_1)
-        print("---------------")
+    # Execute command 1
+    print("---------------")
+    print("Python running:")
+    print(cmd_formatted_1)
+    print("---------------")
 
-        out = os.system(cmd_formatted_1)
-        time.sleep(1) # to allow for ctrl+c
+    out = os.system(cmd_formatted_1)
+    time.sleep(1) # to allow for ctrl+c
 
-        print("---------------")
-        print(f"Returned: {out}")
-        print("---------------")
+    print("---------------")
+    print(f"Returned: {out}")
+    print("---------------")
 
-        if out != 0:
-            raise Exception(f"Output code {out}")
+    if out != 0:
+        raise Exception(f"Output code {out}")
 
-        # Execute command 2
-        print("---------------")
-        print("Python running:")
-        print(cmd_formatted_2)
-        print("---------------")
+    # Execute command 2
+    print("---------------")
+    print("Python running:")
+    print(cmd_formatted_2)
+    print("---------------")
 
-        out = os.system(cmd_formatted_2)
-        time.sleep(1) # to allow for ctrl+c
+    out = os.system(cmd_formatted_2)
+    time.sleep(1) # to allow for ctrl+c
 
-        print("---------------")
-        print(f"Returned: {out}")
-        print("---------------")
+    print("---------------")
+    print(f"Returned: {out}")
+    print("---------------")
 
-        # Load predictions
-        pred_data = np.load(file_dir / 'tmp_pred' / 'pred_mat.npy')
+    # Load predictions
+    pred_data = torch.load(file_dir / 'tmp_pred' / 'results.torch', weights_only=False)
 
+    if 0: # TODO: Waiting on Philippe
         # Load test data
         _, test_data = load_dataset(dataset_name, pair_id)
 
@@ -161,9 +166,9 @@ def main(config_path: str) -> None:
             fig = viz.plot_from_run(dataset_name, pair_id, results_directory, plot_type=plot_type)
             viz.save_figure_results(fig, dataset_name, model_name, batch_id, pair_id, plot_type)
 
-    # Save aggregated batch results
-    with open(results_directory.parent / 'batch_results.yaml', 'w') as f:
-        yaml.dump(batch_results, f)
+        # Save aggregated batch results
+        with open(results_directory.parent / 'batch_results.yaml', 'w') as f:
+            yaml.dump(batch_results, f)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

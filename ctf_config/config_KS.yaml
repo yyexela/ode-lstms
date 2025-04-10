@@ -1,6 +1,9 @@
 dataset:
   name: PDE_KS
-  pair_id: [3]
+  train_ids: [1, 2]
+  reconstruct_ids: [1, 2]
+  forecast_ids: [2]
+  forecast_lengths: [200]
 model:
   name: spacetime
   seed: 0
