@@ -91,5 +91,4 @@ trainer = pl.Trainer(
 
 trainer.fit(learn, trainloader)
 
-if args.dataset not in ["ODE_Lorenz", "PDE_KS"]:
-    results = trainer.test(learn, testloader)
+results = trainer.test(learn, testloader)

@@ -557,24 +557,18 @@ class CustomData:
 
         # Load each dataset and generate windows
         for matrix_id in self.matrix_ids:
-            train_mat, test_mat = helpers.load_dataset_raw(args.dataset, matrix_id)
+            train_mat = helpers.load_dataset_raw(args.dataset, 'train', matrix_id)
 
             train_events, train_y = self.generate_dataset(train_mat, self.seq_length)
-            test_events, test_y = self.generate_dataset(test_mat, self.seq_length)
 
             train_events_l.append(train_events)
             train_y_l.append(train_y)
-            test_events_l.append(test_events)
-            test_y_l.append(test_y)
 
         # Concatinate windows for each separate matrix
         self.train_events = np.concatenate(train_events_l)
         self.train_y = np.concatenate(train_y_l)
-        self.test_events = np.concatenate(test_events_l)
-        self.test_y = np.concatenate(test_y_l)
 
         self.train_elapsed = np.ones((self.train_events.shape[0], self.train_events.shape[1], 1))/self.seq_length
-        self.test_elapsed = np.ones((self.test_events.shape[0], self.test_events.shape[1], 1))/self.seq_length
 
         return None
 

@@ -39,7 +39,7 @@ outputs['forecasts'] = dict()
 # Generate reconstructions
 for matrix_id in args.reconstruct_ids:
     # Get input data to initialize LSTM
-    test_mat_input, timespans_in, test_mat_shape = helpers.load_dataset_lstm_input(args.dataset, matrix_id, args.seq_length)
+    test_mat_input, timespans_in, test_mat_shape = helpers.load_dataset_lstm_input(args.dataset, 'train', 'reconstruction', matrix_id, args.seq_length)
     # Generate the rest of the output
     # alexey: replace 10 with test_mat_shape[0] - args.seq_length
     output_mat = helpers.forward_model(model, test_mat_input, timespans_in, 10, model.device)
@@ -52,7 +52,7 @@ for matrix_id in args.reconstruct_ids:
 # Generate forecasts
 for matrix_id, output_timesteps in zip(args.forecast_ids, args.forecast_lengths):
     # Get input data to initialize LSTM
-    test_mat_input, timespans_in, test_mat_shape = helpers.load_dataset_lstm_input(args.dataset, matrix_id, args.seq_length)
+    test_mat_input, timespans_in, test_mat_shape = helpers.load_dataset_lstm_input(args.dataset, 'train', 'forecast', matrix_id, args.seq_length)
     # Generate the rest of the output
     # alexey: replace 10 with output_timesteps
     output_mat = helpers.forward_model(model, test_mat_input, timespans_in, 10, model.device)

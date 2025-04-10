@@ -7,7 +7,7 @@ from tqdm import tqdm
 from scipy.io import loadmat
 import torch.utils.data as data
 from irregular_sampled_datasets import PersonData, ETSMnistData, XORData, CustomData 
-from ctf4science.data_module import load_dataset
+from ctf4science.data_module import load_dataset_split
 
 def get_single_file_name(directory):
     # List all files in the directory
@@ -47,36 +47,37 @@ def seed_everything(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def load_dataset_raw(dataset, matrix_id):
+def load_dataset_raw(dataset, split, matrix_id):
     """
     Load original unprocessed dataset
     """
     if dataset in ["ODE_Lorenz", "PDE_KS"]:
-        train_mat, test_mat = load_dataset(dataset, matrix_id)
+        data_mat = load_dataset_split(dataset, split, matrix_id)
+        data_mat = np.swapaxes(data_mat, 0, 1)
 
-        train_mat = np.swapaxes(train_mat, 0, 1)
-        test_mat = np.swapaxes(test_mat, 0, 1)
-
-        train_mat = torch.Tensor(train_mat.astype(np.float32))
-        test_mat = torch.Tensor(test_mat.astype(np.float32))
+        data_mat = torch.Tensor(data_mat.astype(np.float32))
     else:
         raise Exception(f"Timeseries dataset {dataset} not found")
-    return train_mat, test_mat
+    return data_mat
 
-def load_dataset_lstm_input(dataset, matrix_id, seq_len):
+def load_dataset_lstm_input(dataset, split, type, matrix_id, seq_len):
     """
     Load dataset for input to LSTM during evaluation
     """
     if dataset in ["ODE_Lorenz", "PDE_KS"]:
-        _, test_mat = load_dataset_raw(dataset, matrix_id)
-        timespans = np.ones((test_mat.shape[0], 1))/seq_len
+        input_mat = load_dataset_raw(dataset, split, matrix_id)
+        timespans = np.ones((input_mat.shape[0], 1))/seq_len
         timespans = torch.Tensor(timespans.astype(np.float32))
-        test_mat_shape = test_mat.shape
-        test_mat = torch.unsqueeze(test_mat[-seq_len:,:],0)
-        timespans = torch.unsqueeze(timespans[-seq_len:,:],0)
+        input_mat_shape = input_mat.shape
+        if type == 'forecast':
+            input_mat = torch.unsqueeze(input_mat[-seq_len:,:],0)
+            timespans = torch.unsqueeze(timespans[-seq_len:,:],0)
+        elif type == 'reconstruction':
+            input_mat = torch.unsqueeze(input_mat[0:seq_len,:],0)
+            timespans = torch.unsqueeze(timespans[0:seq_len,:],0)
     else:
         raise Exception(f"Timeseries dataset {dataset} not found")
-    return test_mat, timespans, test_mat_shape
+    return input_mat, timespans, input_mat_shape
 
 def load_dataset_trainer(args):
     if args.dataset == "person":
@@ -97,11 +98,8 @@ def load_dataset_trainer(args):
         train_x = torch.Tensor(dataset.train_events)
         train_y = torch.Tensor(dataset.train_y)
         train_ts = torch.Tensor(dataset.train_elapsed)
-        test_x = torch.Tensor(dataset.test_events)
-        test_y = torch.Tensor(dataset.test_y)
-        test_ts = torch.Tensor(dataset.test_elapsed)
         train = data.TensorDataset(train_x, train_ts, train_y)
-        test = data.TensorDataset(test_x, test_ts, test_y)
+        test = train
         batch_size = train_x.shape[0]
     else:
         if args.dataset == "et_mnist":
