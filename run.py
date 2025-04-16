@@ -51,7 +51,6 @@ def main(config_path: str) -> None:
     # Load configurations
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
-    ds_config = get_config(config['dataset']['name'])
 
     # Load prepare command to execute
     dataset_name = config['dataset']['name']
