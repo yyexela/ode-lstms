@@ -72,8 +72,10 @@ if args.forecast_id is not None:
     timespans = torch.unsqueeze(timespans[0:args.seq_length,:],0)
     # Generate the rest of the output
     output_mat = helpers.forward_model(model, train_mat, timespans, output_timesteps, model.device)
+    output_mat = output_mat.detach().cpu()
     # Prepend burn-in
-    output_mat = torch.cat([train_mat[0],output_mat.detach().cpu()])
+    if args.burn_in:
+        output_mat = torch.cat([train_mat[0],output_mat])
     # Save output
     output_mat = np.asarray(output_mat).T
 
