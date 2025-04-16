@@ -20,6 +20,7 @@ parser.add_argument("--seq_length", default=100, type=int) # Length of sequence 
 parser.add_argument("--train_ids", default=[1], nargs="+", type=int) # Matrices X1 through X10, enter a list of integers
 parser.add_argument("--epochs", default=1, type=int)
 parser.add_argument("--lr", default=0.01, type=float)
+parser.add_argument("--pair_id", default=None, type=int)
 parser.add_argument("--gradient_clip_val", default=1.00, type=float)
 parser.add_argument("--gpu", default=0, nargs="+", type=int) # List of GPUs to train on 
 parser.add_argument("--accelerator", default="gpu", type=str)
@@ -38,6 +39,7 @@ hp_dict = {
         "dataset": args.dataset,
         "batch_size": batch_size,
         "train_ids": args.train_ids,
+        "pair_id": args.pair_id,
         "seq_length": args.seq_length
     },
     "model_dict": {

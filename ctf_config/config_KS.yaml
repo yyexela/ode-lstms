@@ -1,16 +1,13 @@
 dataset:
   name: PDE_KS
-  train_ids: [1, 2]
-  reconstruct_ids: [1, 2]
-  forecast_ids: [2]
-  forecast_lengths: [200]
+  pair_id: [9]
 model:
   name: spacetime
   seed: 0
   model: "ode-lstm" # ode-lstm or lstm
   solver: "fixed_rk4"
   hidden_state_size: 128
-  seq_length: 100
+  seq_length: 50
   epochs: 3
   gradient_clip_val: 1.0
   accelerator: "gpu"

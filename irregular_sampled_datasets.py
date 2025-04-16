@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
 from scipy.io import loadmat
+from ctf4science.data_module import load_dataset
 
 class Walker2dImitationData:
     def __init__(self, seq_len):
@@ -548,7 +549,7 @@ class CustomData:
     def __init__(self, args):
         # Class variables
         self.seq_length = args.seq_length
-        self.matrix_ids = args.train_ids
+        self.pair_id = args.pair_id
 
         train_events_l = list()
         train_y_l = list()
@@ -556,8 +557,11 @@ class CustomData:
         test_y_l = list()
 
         # Load each dataset and generate windows
-        for matrix_id in self.matrix_ids:
-            train_mat = helpers.load_dataset_raw(args.dataset, 'train', matrix_id)
+        train_mats, _, _ = load_dataset(args.dataset, args.pair_id)
+        for i, train_mat in enumerate(train_mats):
+            train_mat = np.swapaxes(train_mat, 0, 1)
+            train_mat = torch.Tensor(train_mat.astype(np.float32))
+            train_mats[i] = train_mat
 
             train_events, train_y = self.generate_dataset(train_mat, self.seq_length)
 
