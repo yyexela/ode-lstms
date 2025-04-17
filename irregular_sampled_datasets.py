@@ -557,7 +557,7 @@ class CustomData:
         test_y_l = list()
 
         # Load each dataset and generate windows
-        train_mats, _, _ = load_dataset(args.dataset, args.pair_id)
+        train_mats, _ = load_dataset(args.dataset, args.pair_id)
         for i, train_mat in enumerate(train_mats):
             train_mat = np.swapaxes(train_mat, 0, 1)
             train_mat = torch.Tensor(train_mat.astype(np.float32))

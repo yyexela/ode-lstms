@@ -39,7 +39,7 @@ model = IrregularSequenceLearner.load_from_checkpoint(ckpt_path)
 # Generate reconstructions
 if args.reconstruct_id is not None:
     # Get input data to initialize LSTM
-    train_mats, _, _ = load_dataset(args.dataset, args.pair_id)
+    train_mats, _ = load_dataset(args.dataset, args.pair_id)
     train_mat = train_mats[args.train_ids.index(args.reconstruct_id)]
     output_timesteps = train_mat.shape[1] - args.seq_length
     train_mat = np.swapaxes(train_mat, 0, 1)
@@ -58,7 +58,7 @@ if args.reconstruct_id is not None:
 # Generate forecasts
 if args.forecast_id is not None:
     # Get input data to initialize LSTM
-    train_mats, _, init_mat = load_dataset(args.dataset, args.pair_id)
+    train_mats, init_mat = load_dataset(args.dataset, args.pair_id)
     if args.burn_in:
         train_mat = init_mat
     else:

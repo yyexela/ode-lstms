@@ -52,7 +52,7 @@ def load_dataset_initialization_raw(dataset, pair_id):
     Load original unprocessed dataset for initialization matrix
     """
     if dataset in ["ODE_Lorenz", "PDE_KS"]:
-        _, _, data_mat = load_dataset(dataset, pair_id)
+        _, data_mat = load_dataset(dataset, pair_id)
         data_mat = data_mat[0]
         data_mat = np.swapaxes(data_mat, 0, 1)
         data_mat = torch.Tensor(data_mat.astype(np.float32))
