@@ -28,7 +28,10 @@ def forward_model(model, train_mat, timespans, output_timesteps, device):
 
     all_outputs = []
     cur_input = train_mat
-    for _ in tqdm(range(output_timesteps)):
+    interval = output_timesteps // 20
+    for i in range(output_timesteps):
+        if i % interval == 0:
+            print("Forwarded LSTM:", i, "of", output_timesteps, "timesteps")
         out = model.model(cur_input, timespans, None) # (1, 3)
         cur_input = torch.concatenate([cur_input[0], out])[1:,:]
         cur_input = cur_input.unsqueeze(0)

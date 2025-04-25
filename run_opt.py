@@ -13,7 +13,6 @@ from ctf4science.data_module import load_validation_dataset, parse_pair_ids, get
 
 # Delete results directory - used for storing batch_results
 file_dir = Path(__file__).parent
-results_file = file_dir / 'results.yaml'
 
 def main(config_path: str) -> None:
     """
@@ -37,13 +36,15 @@ def main(config_path: str) -> None:
 
     model_name = f"{config['model']['name']}"
 
-    # Generate a unique batch_id for this run
-    # Define the name of the output folder for your batch
-    batch_id = f"hyper_opt"
+    # batch_id is from optimize_parameters.py
+    if 'batch_id' in config['model']:
+        batch_id = config['model']['batch_id']
+    else:
+        batch_id = 0
 
     # Initialize batch results dictionary for summary
     batch_results = {
-        'batch_id': batch_id,
+        'batch_id': f"hyper_opt_{batch_id}",
         'model': model_name,
         'dataset': dataset_name,
         'pairs': []
@@ -57,6 +58,7 @@ def main(config_path: str) -> None:
         """\
         python\
         {ode_lorenz_main_path}\
+        --batch_id {batch_id}\
         --dataset {dataset}\
         --seed {seed}\
         --pair_id {pair_id}\
@@ -69,11 +71,12 @@ def main(config_path: str) -> None:
         --epochs {epochs}\
         --gpu {gpu}\
         --lr {lr}\
-        --validation
+        --validation\
         """
 
         cmd_formatted_1 = cmd_1.format(
             ode_lorenz_main_path = file_dir / "pt_trainer.py",
+            batch_id = batch_id,
             dataset = config['dataset']['name'],
             seed = config['model']['seed'],
             pair_id = pair_id,
@@ -87,25 +90,6 @@ def main(config_path: str) -> None:
             epochs = config['model']['epochs'],
             gpu = config['model']['gpu'],
             lr = config['model']['lr'],
-        )
-
-        cmd_2 = \
-        """\
-        python\
-        {ode_lorenz_main_path}\
-        --dataset {dataset}\
-        --seed {seed}\
-        --pair_id {pair_id}\
-        --seq_length {seq_length}\
-        --validation
-        """
-
-        cmd_formatted_2 = cmd_2.format(
-            ode_lorenz_main_path = file_dir / "ts_evaluation.py",
-            dataset = config['dataset']['name'],
-            seed = config['model']['seed'],
-            pair_id = pair_id,
-            seq_length = config['model']['seq_length'],
         )
 
         # Execute command 1
@@ -124,27 +108,13 @@ def main(config_path: str) -> None:
         if out != 0:
             raise Exception(f"Output code {out}")
 
-        # Execute command 2
-        print("---------------")
-        print("Python running:")
-        print(cmd_formatted_2)
-        print("---------------")
-
-        out = os.system(cmd_formatted_2)
-        time.sleep(1) # to allow for ctrl+c
-
-        print("---------------")
-        print(f"Returned: {out}")
-        print("---------------")
-
-        if out != 0:
-            raise Exception(f"Output code {out}")
-
         # Load predictions
-        pred_data = torch.load(file_dir / 'tmp_pred' / 'output_mat.torch', weights_only=False)
+        pred_data = torch.load(file_dir / 'tmp_pred' / f'output_mat_{batch_id}.torch', weights_only=False)
 
         # Evaluate predictions using default metrics
         _, val_data, _ = load_validation_dataset(dataset_name, pair_id, 0.8)
+        print("output mat shape:", pred_data.shape)
+        print("expected shape:", val_data.shape)
         results = evaluate_custom(dataset_name, pair_id, val_data, pred_data)
 
         # Append metrics to batch results
@@ -155,6 +125,7 @@ def main(config_path: str) -> None:
         })
 
     # Save aggregated batch results
+    results_file = file_dir / f"results_{batch_id}.yaml"
     with open(results_file, 'w') as f:
         yaml.dump(batch_results, f)
 

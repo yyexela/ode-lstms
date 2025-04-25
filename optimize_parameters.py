@@ -13,7 +13,6 @@ from ctf4science.eval_module import evaluate, save_results
 from ctf4science.visualization_module import Visualization
 
 file_dir = Path(__file__).parent
-results_file = file_dir / 'results.yaml'
 
 # Update python PATH so that we can load run.py from CTF_NaiveBaselines directly
 sys.path.insert(0, str(file_dir))
@@ -119,6 +118,8 @@ def generate_config(config, template, name):
         - Modifies the input template dictionary by adding the suggested constant value
     """
     # Fill out dictionary
+    batch_id = str(tune.get_context().get_trial_id())
+    template['model']['batch_id'] = batch_id
     template['model']['lr'] = config['lr']
     template['model']['hidden_state_size'] = config['hidden_state_size']
     template['model']['seq_length'] = config['seq_length']
@@ -151,6 +152,7 @@ def main(config_path: str, save_config: bool = True) -> None:
             "pair_id": hp_config['dataset']['pair_id']
         },
         "model":{
+            "batch_id": "0",
             "name": "spacetime",
             "seed": hp_config['model']['seed'],
             "model": "ode-lstm",
@@ -172,8 +174,10 @@ def main(config_path: str, save_config: bool = True) -> None:
 
     # Define objective for Ray Tune
     def objective(config):
+        # Get batch_id
+        batch_id = str(tune.get_context().get_trial_id())
         # Create config file
-        config_path = generate_config(config, yaml_dict, 'hp_config')
+        config_path = generate_config(config, yaml_dict, f'hp_config_{batch_id}')
         # Run model
         print("running")
         print(f"python {file_dir / 'run.py'} {config_path}")
@@ -181,14 +185,18 @@ def main(config_path: str, save_config: bool = True) -> None:
         if ret != 0:
             raise Exception(f"Output: {ret}")
         # Extract results
+        results_file = file_dir / f'results_{batch_id}.yaml'
         with open(results_file, 'r') as f:
             results = yaml.safe_load(f)
+        results_file.unlink(missing_ok=True)
+        config_path.unlink(missing_ok=True)
         score = sum_results(results)
         # Return score
         return {"score": score}
 
     # Create Ray Tune object
-    tuner = tune.Tuner(objective,
+    trainable_with_gpu = tune.with_resources(objective, {"gpu": "3"}) ## Yue: this is how you add GPU to ray tune
+    tuner = tune.Tuner(trainable_with_gpu,
                         param_space=param_dict,
                         tune_config=tune.TuneConfig(
                             #search_alg=OptunaSearch(), # Throws errors (seg faults) but still runs
@@ -202,10 +210,6 @@ def main(config_path: str, save_config: bool = True) -> None:
     # Run optimization
     results = tuner.fit()
 
-    # Remove last results file and hp_config.yaml (no loose files)
-    results_file.unlink(missing_ok=True)
-    (file_dir / 'config' / 'hp_config.yaml').unlink(missing_ok=True)
-
     # Obtain best hyperparameter value
     best_score = results.get_best_result(metric="score", mode="max").metrics['score']
     best_params = results.get_best_result(metric="score", mode="max").config
@@ -215,8 +219,12 @@ def main(config_path: str, save_config: bool = True) -> None:
     if not save_config: # Only False when unit testing
         print("Not saving final config file.")
     else:
-        config_path = file_dir / 'config' / f'config_{hp_config["dataset"]["name"]}_constant_batch_{hp_config["dataset"]["pair_id"]}.yaml'
-        yaml_dict['model']['constant_value'] = best_params
+        pair_ids = ''.join(map(str,hp_config["dataset"]["pair_id"]))
+        config_path = file_dir / 'ctf_config' / f'config_{hp_config["dataset"]["name"]}_constant_batch_{pair_ids}.yaml'
+        yaml_dict['model']['lr'] = best_params['lr']
+        yaml_dict['model']['hidden_state_size'] = best_params['hidden_state_size']
+        yaml_dict['model']['seq_length'] = best_params['seq_length']
+        yaml_dict['model'].pop('batch_id', None)
         print("Final config file saved to:", config_path)
         with open(config_path, 'w') as f:
             yaml.dump(yaml_dict, f)

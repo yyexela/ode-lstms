@@ -1,10 +1,13 @@
 # Copyright 2021 The ODE-LSTM Authors. All Rights Reserved.
 
+import numpy as np
+import torch
 import argparse
 import helpers
 import shutil
 import pytorch_lightning as pl
 from torch_node_cell import ODELSTM, IrregularSequenceLearner
+from ctf4science.data_module import load_validation_dataset, load_dataset, get_prediction_timesteps, get_validation_prediction_timesteps, get_validation_training_timesteps
 from pathlib import Path
 
 # file dir
@@ -25,7 +28,12 @@ parser.add_argument("--gpu", default="-1", type=str) # List of GPUs to train on
 parser.add_argument("--accelerator", default="gpu", type=str)
 parser.add_argument("--log_every_n_steps", default=1, type=int)
 parser.add_argument("--validation", action='store_true')
+parser.add_argument("--batch_id", default='0', type=str)
+parser.add_argument("--debug", action='store_true')
 args = parser.parse_args()
+
+print("Command line arguments:")
+print(args)
 
 helpers.seed_everything(args.seed)
 
@@ -96,4 +104,72 @@ trainer = pl.Trainer(
 
 trainer.fit(learn, trainloader)
 
-results = trainer.test(learn, testloader)
+# Generate reconstructions
+if args.pair_id in [2, 4]:
+    # Get input data to initialize spacetime
+    if args.validation:
+        train_mats, _, init_data = load_validation_dataset(args.dataset, args.pair_id)
+        output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length
+    else:
+        train_mats, init_data = load_dataset(args.dataset, args.pair_id)
+        output_timesteps = get_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length
+    train_mat = train_mats[0]
+    train_mat = np.swapaxes(train_mat, 0, 1)
+    train_mat = torch.Tensor(train_mat.astype(np.float32))
+    timespans = np.ones((train_mat.shape[0], 1))/args.seq_length
+    timespans = torch.Tensor(timespans.astype(np.float32))
+    train_mat = torch.unsqueeze(train_mat[0:args.seq_length,:],0)
+    timespans = torch.unsqueeze(timespans[0:args.seq_length,:],0)
+    # Generate the rest of the output
+    if args.debug:
+        output_mat = np.zeros((train_mat.shape[2], output_timesteps+args.seq_length))
+    else:
+        output_mat = helpers.forward_model(learn, train_mat, timespans, output_timesteps, learn.device)
+        # Save output
+        output_mat = np.asarray(output_mat.detach().cpu()).T
+        train_mat = np.asarray(train_mat.squeeze().T)
+        output_mat = np.concatenate([train_mat, output_mat], axis=1)
+
+# Generate forecasts
+else:
+    # Get input data to initialize spacetime
+    if args.validation:
+        train_mats, _, init_mat = load_validation_dataset(args.dataset, args.pair_id)
+        if args.pair_id in [8,9]:
+            train_mat = init_mat
+            output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length
+        else:
+            train_mat = train_mats[0]
+            output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0]
+    else:
+        train_mats, init_mat = load_dataset(args.dataset, args.pair_id)
+        if args.pair_id in [8,9]:
+            train_mat = init_mat
+            output_timesteps = get_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length
+        else:
+            train_mat = train_mats[0]
+            output_timesteps = get_prediction_timesteps(args.dataset, args.pair_id).shape[0]
+    train_mat = np.swapaxes(train_mat, 0, 1)
+    train_mat = torch.Tensor(train_mat.astype(np.float32))
+    timespans = np.ones((train_mat.shape[0], 1))/args.seq_length
+    timespans = torch.Tensor(timespans.astype(np.float32))
+    train_mat = torch.unsqueeze(train_mat[-args.seq_length:,:],0)
+    timespans = torch.unsqueeze(timespans[-args.seq_length:,:],0)
+    # Generate the rest of the output
+    # alexey: replace 10 with output_timesteps
+    if args.debug:
+        output_mat = np.zeros((train_mat.shape[2], output_timesteps + args.seq_length))
+    else:
+        output_mat = helpers.forward_model(learn, train_mat, timespans, output_timesteps, learn.device)
+        # Save output
+        output_mat = output_mat.detach().cpu()
+        output_mat = np.asarray(output_mat).T
+        if args.pair_id in [8,9]:
+            train_mat = np.asarray(train_mat.squeeze().T)
+            output_mat = np.concatenate([train_mat, output_mat], axis=1)
+
+# Make tmp output dir
+(file_dir / 'tmp_pred').mkdir(exist_ok=True)
+
+# Save file
+torch.save(output_mat, file_dir / 'tmp_pred' / f'output_mat_{args.batch_id}.torch')
