@@ -7,18 +7,22 @@ import datetime
 import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any
-from ctf4science.eval_module import evaluate, save_results
+from ctf4science.eval_module import evaluate_custom, save_results
 from ctf4science.visualization_module import Visualization
-from ctf4science.data_module import load_dataset, parse_pair_ids, get_applicable_plots, get_config, get_prediction_timesteps
+from ctf4science.data_module import load_validation_dataset, parse_pair_ids, get_applicable_plots, get_config, get_prediction_timesteps
 
-# file dir
+# Delete results directory - used for storing batch_results
 file_dir = Path(__file__).parent
+results_file = file_dir / 'results.yaml'
 
 def main(config_path: str) -> None:
     """
-    Main function to run the spacetime model with specified config file.
+    Main function to run the spacetime model on specified sub-datasets.
 
-    Loads configuration and prepares to call the model.
+    Loads configuration, parses pair_ids, initializes the model, generates predictions,
+    evaluates them, and saves results for each sub-dataset under a batch identifier.
+
+    The evaluation function evaluates on validation data obtained from training data.
 
     Args:
         config_path (str): Path to the configuration file.
@@ -35,7 +39,7 @@ def main(config_path: str) -> None:
 
     # Generate a unique batch_id for this run
     # Define the name of the output folder for your batch
-    batch_id = f"batch_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    batch_id = f"hyper_opt"
 
     # Initialize batch results dictionary for summary
     batch_results = {
@@ -44,12 +48,6 @@ def main(config_path: str) -> None:
         'dataset': dataset_name,
         'pairs': []
     }
-
-    # Initialize Visualization object
-    viz = Visualization()
-
-    # Get applicable visualizations for the dataset
-    applicable_plots = get_applicable_plots(dataset_name)
 
     # Process each sub-dataset
     for pair_id in pair_ids:
@@ -71,6 +69,7 @@ def main(config_path: str) -> None:
         --epochs {epochs}\
         --gpu {gpu}\
         --lr {lr}\
+        --validation
         """
 
         cmd_formatted_1 = cmd_1.format(
@@ -98,6 +97,7 @@ def main(config_path: str) -> None:
         --seed {seed}\
         --pair_id {pair_id}\
         --seq_length {seq_length}\
+        --validation
         """
 
         cmd_formatted_2 = cmd_2.format(
@@ -144,10 +144,8 @@ def main(config_path: str) -> None:
         pred_data = torch.load(file_dir / 'tmp_pred' / 'output_mat.torch', weights_only=False)
 
         # Evaluate predictions using default metrics
-        results = evaluate(dataset_name, pair_id, pred_data)
-
-        # Save results for this sub-dataset and get the path to the results directory
-        results_directory = save_results(dataset_name, model_name, batch_id, pair_id, config, pred_data, results)
+        _, val_data, _ = load_validation_dataset(dataset_name, pair_id, 0.8)
+        results = evaluate_custom(dataset_name, pair_id, val_data, pred_data)
 
         # Append metrics to batch results
         # Convert metric values to plain Python floats for YAML serialization
@@ -156,14 +154,9 @@ def main(config_path: str) -> None:
             'metrics': results
         })
 
-        # Generate and save visualizations that are applicable to this dataset
-        for plot_type in applicable_plots:
-            fig = viz.plot_from_batch(dataset_name, pair_id, results_directory, plot_type=plot_type)
-            viz.save_figure_results(fig, dataset_name, model_name, batch_id, pair_id, plot_type, results_directory)
-
-        # Save aggregated batch results
-        with open(results_directory.parent / 'batch_results.yaml', 'w') as f:
-            yaml.dump(batch_results, f)
+    # Save aggregated batch results
+    with open(results_file, 'w') as f:
+        yaml.dump(batch_results, f)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

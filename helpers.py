@@ -7,7 +7,7 @@ from tqdm import tqdm
 from scipy.io import loadmat
 import torch.utils.data as data
 from irregular_sampled_datasets import PersonData, ETSMnistData, XORData, CustomData 
-from ctf4science.data_module import load_dataset
+from ctf4science.data_module import load_dataset, load_validation_dataset
 
 def get_single_file_name(directory):
     # List all files in the directory
@@ -46,19 +46,6 @@ def seed_everything(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-
-def load_dataset_initialization_raw(dataset, pair_id):
-    """
-    Load original unprocessed dataset for initialization matrix
-    """
-    if dataset in ["ODE_Lorenz", "PDE_KS"]:
-        _, data_mat = load_dataset(dataset, pair_id)
-        data_mat = data_mat[0]
-        data_mat = np.swapaxes(data_mat, 0, 1)
-        data_mat = torch.Tensor(data_mat.astype(np.float32))
-    else:
-        raise Exception(f"Timeseries dataset {dataset} not found")
-    return data_mat
 
 def load_dataset_trainer(args):
     if args.dataset == "person":

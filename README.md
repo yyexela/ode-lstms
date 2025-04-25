@@ -1,3 +1,27 @@
+# alexey: 
+
+- `configs/datasets` for ODE_Lorenz and PDE_KS
+  - size is seq_len, label_len, pred_len
+- `configs/loader` for ODE_Lorenz and PDE_KS
+- `dataloaders` for ODE_Lorenz and PDE_KS
+- Skip connection doesn't work for multivariate out of the box (see GH issues)
+- Length of each of validation, testing, and training datasets need to be larger than batch size
+- Skip testing dataset
+
+Environment:
+```bash
+pyenv install 3.11.11
+pyenv local 3.11.11
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cd ../../
+pip install -e .[all]
+```
+
+Hyperparameter optimization:
+- `python optimize_parameters.py tuning_config/config_KS_8.yaml`
+- `python optimize_parameters.py tuning_config/config_Lorenz_8.yaml`
 # Learning Long-Term Dependencies in Irregularly-Sampled Time Series
 
 This is the **not** official code repository of the paper *Learning Long-Term Dependencies in Irregularly-Sampled Time Series* [[arXiv link]](https://arxiv.org/pdf/2006.04418.pdf).  

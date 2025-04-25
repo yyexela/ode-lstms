@@ -17,14 +17,14 @@ parser.add_argument("--model", default="ode-lstms")
 parser.add_argument("--solver", default="dopri5")
 parser.add_argument("--hidden_state_size", default=64, type=int) # Hidden state size
 parser.add_argument("--seq_length", default=100, type=int) # Length of sequence for ODE and PDE datasets
-parser.add_argument("--train_ids", default=[1], nargs="+", type=int) # Matrices X1 through X10, enter a list of integers
 parser.add_argument("--epochs", default=1, type=int)
 parser.add_argument("--lr", default=0.01, type=float)
 parser.add_argument("--pair_id", default=None, type=int)
 parser.add_argument("--gradient_clip_val", default=1.00, type=float)
-parser.add_argument("--gpu", default=0, nargs="+", type=int) # List of GPUs to train on 
+parser.add_argument("--gpu", default="-1", type=str) # List of GPUs to train on 
 parser.add_argument("--accelerator", default="gpu", type=str)
 parser.add_argument("--log_every_n_steps", default=1, type=int)
+parser.add_argument("--validation", action='store_true')
 args = parser.parse_args()
 
 helpers.seed_everything(args.seed)
@@ -38,9 +38,9 @@ hp_dict = {
     "dataset_dict": {
         "dataset": args.dataset,
         "batch_size": batch_size,
-        "train_ids": args.train_ids,
         "pair_id": args.pair_id,
-        "seq_length": args.seq_length
+        "seq_length": args.seq_length,
+        "validation": args.validation
     },
     "model_dict": {
         "in_features": in_features,
