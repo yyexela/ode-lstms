@@ -113,8 +113,6 @@ def main(config_path: str) -> None:
 
         # Evaluate predictions using default metrics
         _, val_data, _ = load_validation_dataset(dataset_name, pair_id, 0.8)
-        print("output mat shape:", pred_data.shape)
-        print("expected shape:", val_data.shape)
         results = evaluate_custom(dataset_name, pair_id, val_data, pred_data)
 
         # Append metrics to batch results

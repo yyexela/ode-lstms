@@ -220,7 +220,7 @@ def main(config_path: str, save_config: bool = True) -> None:
         print("Not saving final config file.")
     else:
         pair_ids = ''.join(map(str,hp_config["dataset"]["pair_id"]))
-        config_path = file_dir / 'ctf_config' / f'config_{hp_config["dataset"]["name"]}_constant_batch_{pair_ids}.yaml'
+        config_path = file_dir / 'ctf_config' / f'config_{hp_config["dataset"]["name"]}_constant_batch_{pair_ids}_optimized.yaml'
         yaml_dict['model']['lr'] = best_params['lr']
         yaml_dict['model']['hidden_state_size'] = best_params['hidden_state_size']
         yaml_dict['model']['seq_length'] = best_params['seq_length']
