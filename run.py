@@ -59,12 +59,14 @@ def main(config_path: str) -> None:
         """\
         python\
         {ode_lorenz_main_path}\
+        --batch_id {batch_id}\
         --dataset {dataset}\
         --seed {seed}\
         --pair_id {pair_id}\
         --model {model}\
         --solver {solver}\
         --hidden_state_size {hidden_state_size}\
+        --seq_length {seq_length}\
         --gradient_clip_val {gradient_clip_val}\
         --accelerator {accelerator}\
         --log_every_n_steps {log_every_n_steps}\
@@ -75,6 +77,7 @@ def main(config_path: str) -> None:
 
         cmd_formatted_1 = cmd_1.format(
             ode_lorenz_main_path = file_dir / "pt_trainer.py",
+            batch_id = batch_id,
             dataset = config['dataset']['name'],
             seed = config['model']['seed'],
             pair_id = pair_id,
@@ -88,24 +91,6 @@ def main(config_path: str) -> None:
             epochs = config['model']['epochs'],
             gpu = config['model']['gpu'],
             lr = config['model']['lr'],
-        )
-
-        cmd_2 = \
-        """\
-        python\
-        {ode_lorenz_main_path}\
-        --dataset {dataset}\
-        --seed {seed}\
-        --pair_id {pair_id}\
-        --seq_length {seq_length}\
-        """
-
-        cmd_formatted_2 = cmd_2.format(
-            ode_lorenz_main_path = file_dir / "ts_evaluation.py",
-            dataset = config['dataset']['name'],
-            seed = config['model']['seed'],
-            pair_id = pair_id,
-            seq_length = config['model']['seq_length'],
         )
 
         # Execute command 1
@@ -124,24 +109,9 @@ def main(config_path: str) -> None:
         if out != 0:
             raise Exception(f"Output code {out}")
 
-        # Execute command 2
-        print("---------------")
-        print("Python running:")
-        print(cmd_formatted_2)
-        print("---------------")
-
-        out = os.system(cmd_formatted_2)
-        time.sleep(1) # to allow for ctrl+c
-
-        print("---------------")
-        print(f"Returned: {out}")
-        print("---------------")
-
-        if out != 0:
-            raise Exception(f"Output code {out}")
-
         # Load predictions
-        pred_data = torch.load(file_dir / 'tmp_pred' / 'output_mat.torch', weights_only=False)
+        pred_data = torch.load(file_dir / 'tmp_pred' / f'output_mat_{batch_id}.torch', weights_only=False)
+        print("pred shape:", pred_data.shape)
 
         # Evaluate predictions using default metrics
         results = evaluate(dataset_name, pair_id, pred_data)

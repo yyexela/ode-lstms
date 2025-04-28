@@ -64,6 +64,7 @@ def main(config_path: str) -> None:
         --pair_id {pair_id}\
         --model {model}\
         --solver {solver}\
+        --seq_length {seq_length}\
         --hidden_state_size {hidden_state_size}\
         --gradient_clip_val {gradient_clip_val}\
         --accelerator {accelerator}\

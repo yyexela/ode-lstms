@@ -103,6 +103,7 @@ trainer = pl.Trainer(
 )
 
 trainer.fit(learn, trainloader)
+learn.eval()
 
 # Generate reconstructions
 if args.pair_id in [2, 4]:
