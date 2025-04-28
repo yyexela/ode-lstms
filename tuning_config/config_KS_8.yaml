@@ -2,11 +2,19 @@ dataset:
   name: PDE_KS
   pair_id: [8]
 model:
-  name: ode-lstm
-  train_split: 0.8
-  n_trials: 2
+  name: spacetime
   seed: 0
+  n_trials: 2
   epochs: 3
+  model: ode-lstm
+  solver: fixed_rk4
+  epochs: 2
+  gradient_clip_val: 1.0
+  accelerator: auto
+  gpu: auto
+  log_every_n_steps: 1
+  train_split: 0.8   # float in (0.7 and 1.0)
+                     # proportion of train data to use for training
 hyperparameters:
   hidden_state_size:
     type: choice
