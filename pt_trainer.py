@@ -24,7 +24,7 @@ parser.add_argument("--epochs", default=1, type=int)
 parser.add_argument("--lr", default=0.01, type=float)
 parser.add_argument("--pair_id", default=None, type=int)
 parser.add_argument("--gradient_clip_val", default=1.00, type=float)
-parser.add_argument("--gpu", default="-1", type=str) # List of GPUs to train on 
+parser.add_argument("--gpu", default="1", type=str) # List of GPUs to train on 
 parser.add_argument("--accelerator", default="gpu", type=str)
 parser.add_argument("--log_every_n_steps", default=1, type=int)
 parser.add_argument("--validation", action='store_true')
@@ -96,10 +96,10 @@ trainer = pl.Trainer(
     max_epochs=args.epochs,
     #progress_bar_refresh_rate=1, # Deprecated
     gradient_clip_val=args.gradient_clip_val,
-    devices=args.gpu,
     accelerator=args.accelerator,
     log_every_n_steps=args.log_every_n_steps,
-    default_root_dir=str(file_dir)
+    default_root_dir=str(file_dir),
+    devices=args.gpu
 )
 
 trainer.fit(learn, trainloader)
@@ -110,26 +110,36 @@ if args.pair_id in [2, 4]:
     # Get input data to initialize spacetime
     if args.validation:
         train_mats, _, init_data = load_validation_dataset(args.dataset, args.pair_id)
-        output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length
+        output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0]
     else:
         train_mats, init_data = load_dataset(args.dataset, args.pair_id)
-        output_timesteps = get_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length
+        output_timesteps = get_prediction_timesteps(args.dataset, args.pair_id).shape[0]
     train_mat = train_mats[0]
     train_mat = np.swapaxes(train_mat, 0, 1)
     train_mat = torch.Tensor(train_mat.astype(np.float32))
     timespans = np.ones((train_mat.shape[0], 1))/args.seq_length
     timespans = torch.Tensor(timespans.astype(np.float32))
-    train_mat = torch.unsqueeze(train_mat[0:args.seq_length,:],0)
-    timespans = torch.unsqueeze(timespans[0:args.seq_length,:],0)
+    train_mat = torch.unsqueeze(train_mat,0)
+    timespans = torch.unsqueeze(timespans,0)
     # Generate the rest of the output
     if args.debug:
         output_mat = np.zeros((train_mat.shape[2], output_timesteps+args.seq_length))
     else:
-        output_mat = helpers.forward_model(learn, train_mat, timespans, output_timesteps, learn.device)
-        # Save output
-        output_mat = np.asarray(output_mat.detach().cpu()).T
-        train_mat = np.asarray(train_mat.squeeze().T)
-        output_mat = np.concatenate([train_mat, output_mat], axis=1)
+        output_mat_full = None
+        start_idx = 0
+        while output_mat_full is None or output_mat_full.shape[1] < output_timesteps:
+            train_mat_tmp = train_mat[:,start_idx:start_idx + args.seq_length,:]
+            timespans_tmp = timespans[:,start_idx:start_idx + args.seq_length,:]
+            output_mat = helpers.forward_model(learn, train_mat_tmp, timespans_tmp, 1, learn.device)
+            # Save output
+            output_mat = np.asarray(output_mat.detach().cpu()).T
+            train_mat_tmp = np.asarray(train_mat_tmp.squeeze().T)
+            if start_idx == 0:
+                output_mat_full = np.concatenate([train_mat_tmp, output_mat], axis=1)
+            else:
+                output_mat_full = np.concatenate([output_mat_full, output_mat], axis=1)
+            start_idx += 1
+        output_mat_full = output_mat_full[:,0:output_timesteps]
 
 # Generate forecasts
 else:

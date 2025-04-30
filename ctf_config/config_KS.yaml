@@ -12,6 +12,6 @@ model:
   gradient_clip_val: 1.0
   accelerator: "auto"
   log_every_n_steps: 1
-  gpu: "auto"
+  "1"
   lr: 0.01
   seed: 0
