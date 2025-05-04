@@ -60,6 +60,7 @@ def main(config_path: str) -> None:
         python\
         {ode_lorenz_main_path}\
         --batch_id {batch_id}\
+        --batch_size {batch_size}\
         --dataset {dataset}\
         --seed {seed}\
         --pair_id {pair_id}\
@@ -68,16 +69,14 @@ def main(config_path: str) -> None:
         --hidden_state_size {hidden_state_size}\
         --seq_length {seq_length}\
         --gradient_clip_val {gradient_clip_val}\
-        --accelerator {accelerator}\
-        --log_every_n_steps {log_every_n_steps}\
         --epochs {epochs}\
-        --gpu {gpu}\
         --lr {lr}\
         """
 
         cmd_formatted_1 = cmd_1.format(
             ode_lorenz_main_path = file_dir / "pt_trainer.py",
             batch_id = batch_id,
+            batch_size = config['model']['batch_size'],
             dataset = config['dataset']['name'],
             seed = config['model']['seed'],
             pair_id = pair_id,
@@ -86,10 +85,7 @@ def main(config_path: str) -> None:
             hidden_state_size = config['model']['hidden_state_size'],
             seq_length = config['model']['seq_length'],
             gradient_clip_val = config['model']['gradient_clip_val'],
-            accelerator = config['model']['accelerator'],
-            log_every_n_steps = config['model']['log_every_n_steps'],
             epochs = config['model']['epochs'],
-            gpu = config['model']['gpu'],
             lr = config['model']['lr'],
         )
 

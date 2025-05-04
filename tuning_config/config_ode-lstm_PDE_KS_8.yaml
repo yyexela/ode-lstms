@@ -14,15 +14,13 @@ hyperparameters:
   seq_length:
     lower_bound: 5
     type: randint
-    upper_bound: 45
+    upper_bound: 39
 model:
-  accelerator: auto
-  epochs: 200
-  1
+  batch_size: 128
+  epochs: 2
   gradient_clip_val: 1.0
-  log_every_n_steps: 1
   model: ode-lstm
-  n_trials: 1000
+  n_trials: 2
   name: spacetime
   seed: 0
   solver: fixed_rk4

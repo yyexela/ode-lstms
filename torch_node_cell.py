@@ -1,5 +1,6 @@
 # Copyright 2021 The ODE-LSTM Authors. All Rights Reserved.
 
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 from torchdyn.core import NeuralODE
@@ -191,3 +192,56 @@ class IrregularSequenceLearner(pl.LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.model.parameters(), lr=self.lr)
+
+class NonPLLearner():
+    def __init__(self, model, args, classification_task):
+        """
+        model: LSTM model to train
+        lr: learning rate
+        classification_task: True if doing a classification task (default)
+                        False if doing MSE (time-series forecasting)
+        """
+        super().__init__()
+        self.model = model
+        self.lr = args.lr
+        self.classification_task = classification_task
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.device = args.device
+        self.epochs = args.epochs
+        self.gradient_clip_val = args.gradient_clip_val
+        self.args = args
+
+    def training_loop(self, dataloader):
+        # enable grads
+        torch.set_grad_enabled(True)
+
+        losses = []
+        for epoch in tqdm(range(self.epochs), "Training Model"):
+            for i, batch in enumerate(dataloader):
+                if len(batch) == 4:
+                    x, t, y, mask = batch
+                else:
+                    x, t, y = batch
+                    mask = None
+                x = x.to(self.device)
+                t = t.to(self.device)
+                y = y.to(self.device)
+                if mask is not None:
+                    mask = mask.to(self.device)
+
+                y_hat = self.model.forward(x, t, mask)
+                if self.classification_task:
+                    y_hat = y_hat.view(-1, y_hat.size(-1))
+                    y = y.view(-1)
+                    loss = nn.CrossEntropyLoss()(y_hat, y)
+                else:
+                    loss = nn.MSELoss()(y_hat, y)
+
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.gradient_clip_val)
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+
+                losses.append(loss.detach().cpu().item())
+
+        return losses

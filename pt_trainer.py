@@ -5,8 +5,8 @@ import torch
 import argparse
 import helpers
 import shutil
-import pytorch_lightning as pl
-from torch_node_cell import ODELSTM, IrregularSequenceLearner
+from tqdm import tqdm
+from torch_node_cell import ODELSTM, NonPLLearner
 from ctf4science.data_module import load_validation_dataset, load_dataset, get_prediction_timesteps, get_validation_prediction_timesteps, get_validation_training_timesteps
 from pathlib import Path
 
@@ -24,11 +24,10 @@ parser.add_argument("--epochs", default=1, type=int)
 parser.add_argument("--lr", default=0.01, type=float)
 parser.add_argument("--pair_id", default=None, type=int)
 parser.add_argument("--gradient_clip_val", default=1.00, type=float)
-parser.add_argument("--gpu", default="1", type=str) # List of GPUs to train on 
-parser.add_argument("--accelerator", default="gpu", type=str)
-parser.add_argument("--log_every_n_steps", default=1, type=int)
+parser.add_argument("--device", default="cuda", type=str) # PyTorch device
 parser.add_argument("--validation", action='store_true')
 parser.add_argument("--batch_id", default='0', type=str)
+parser.add_argument("--batch_size", default=10, type=int)
 parser.add_argument("--debug", action='store_true')
 args = parser.parse_args()
 
@@ -40,36 +39,8 @@ helpers.seed_everything(args.seed)
 classification_task = args.dataset in ["et_mnist", "xor", "person"]
 
 trainloader, testloader, in_features, out_features, return_sequences, batch_size = helpers.load_dataset_trainer(args)
-
-# Hyperparameters dictionary
-hp_dict = {
-    "dataset_dict": {
-        "dataset": args.dataset,
-        "batch_size": batch_size,
-        "pair_id": args.pair_id,
-        "seq_length": args.seq_length,
-        "validation": args.validation
-    },
-    "model_dict": {
-        "in_features": in_features,
-        "out_features": out_features,
-        "hidden_state_size": args.hidden_state_size,
-        "return_sequences": return_sequences,
-        "model": args.model,
-        "solver": args.solver
-    },
-    "learner_dict": {
-        "lr": args.lr,
-        "classification_task": classification_task
-    },
-    "trainer_dict": {
-        "max_epochs": args.epochs,
-        "gradient_clip_val": args.gradient_clip_val,
-        "devices": args.gpu,
-        "accelerator": args.accelerator,
-        "log_every_n_steps": args.log_every_n_steps
-    }
-}
+if batch_size is None:
+    batch_size = args.batch_size
 
 # Remove old model saves
 try:
@@ -86,24 +57,17 @@ ode_lstm = ODELSTM(
     model=args.model
 )
 
-learn = IrregularSequenceLearner(
+ode_lstm.train()
+ode_lstm.to(args.device)
+
+learner = NonPLLearner(
     model=ode_lstm,
-    lr=args.lr,
-    classification_task=classification_task,
-    hp_dict=hp_dict)
+    args=args,
+    classification_task=classification_task)
 
-trainer = pl.Trainer(
-    max_epochs=args.epochs,
-    #progress_bar_refresh_rate=1, # Deprecated
-    gradient_clip_val=args.gradient_clip_val,
-    accelerator=args.accelerator,
-    log_every_n_steps=args.log_every_n_steps,
-    default_root_dir=str(file_dir),
-    devices=args.gpu
-)
+losses = learner.training_loop(trainloader)
 
-trainer.fit(learn, trainloader)
-learn.eval()
+ode_lstm.eval()
 
 # Generate reconstructions
 if args.pair_id in [2, 4]:
@@ -126,11 +90,11 @@ if args.pair_id in [2, 4]:
         output_mat = np.zeros((train_mat.shape[2], output_timesteps+args.seq_length))
     else:
         output_mat_full = None
-        start_idx = 0
-        while output_mat_full is None or output_mat_full.shape[1] < output_timesteps:
+        #while output_mat_full is None or output_mat_full.shape[1] < output_timesteps:
+        for start_idx in tqdm(range(output_timesteps - args.seq_length), "Unrolling Model"):
             train_mat_tmp = train_mat[:,start_idx:start_idx + args.seq_length,:]
             timespans_tmp = timespans[:,start_idx:start_idx + args.seq_length,:]
-            output_mat = helpers.forward_model(learn, train_mat_tmp, timespans_tmp, 1, learn.device)
+            output_mat = helpers.forward_model(ode_lstm, train_mat_tmp, timespans_tmp, 1, args.device)
             # Save output
             output_mat = np.asarray(output_mat.detach().cpu()).T
             train_mat_tmp = np.asarray(train_mat_tmp.squeeze().T)
@@ -138,8 +102,8 @@ if args.pair_id in [2, 4]:
                 output_mat_full = np.concatenate([train_mat_tmp, output_mat], axis=1)
             else:
                 output_mat_full = np.concatenate([output_mat_full, output_mat], axis=1)
-            start_idx += 1
         output_mat_full = output_mat_full[:,0:output_timesteps]
+        output_mat = output_mat_full
 
 # Generate forecasts
 else:
@@ -171,7 +135,7 @@ else:
     if args.debug:
         output_mat = np.zeros((train_mat.shape[2], output_timesteps + args.seq_length))
     else:
-        output_mat = helpers.forward_model(learn, train_mat, timespans, output_timesteps, learn.device)
+        output_mat = helpers.forward_model(ode_lstm, train_mat, timespans, output_timesteps, args.device)
         # Save output
         output_mat = output_mat.detach().cpu()
         output_mat = np.asarray(output_mat).T

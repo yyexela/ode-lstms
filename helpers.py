@@ -27,14 +27,20 @@ def forward_model(model, train_mat, timespans, output_timesteps, device):
 
     all_outputs = []
     cur_input = train_mat
-    for i in range(output_timesteps):
-        out = model.model(cur_input, timespans, None) # (1, 3)
-        cur_input = torch.concatenate([cur_input[0], out])[1:,:]
-        cur_input = cur_input.unsqueeze(0)
+    if output_timesteps > 1:
+        for i in tqdm(range(output_timesteps), "Unrolling Model"):
+            out = model(cur_input, timespans, None) # (1, 3)
+            cur_input = torch.concatenate([cur_input[0], out])[1:,:]
+            cur_input = cur_input.unsqueeze(0)
+            all_outputs.append(out)
+        all_outputs_mat = torch.concatenate(all_outputs)
+        return all_outputs_mat
+    else:
+        out = model(cur_input, timespans, None) # (1, 3)
         all_outputs.append(out)
-    all_outputs_mat = torch.concatenate(all_outputs)
+        all_outputs_mat = torch.concatenate(all_outputs)
+        return all_outputs_mat
 
-    return all_outputs_mat
 
 def seed_everything(seed):
     random.seed(seed)
@@ -67,7 +73,7 @@ def load_dataset_trainer(args):
         train_ts = torch.Tensor(dataset.train_elapsed)
         train = data.TensorDataset(train_x, train_ts, train_y)
         test = train
-        batch_size = train_x.shape[0]
+        batch_size = args.batch_size
     else:
         if args.dataset == "et_mnist":
             dataset = ETSMnistData(time_major=False)
