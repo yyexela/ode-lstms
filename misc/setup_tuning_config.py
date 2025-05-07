@@ -13,23 +13,24 @@ for model in ['ode-lstm', 'lstm']:
             # Fill data
             hp_config['dataset']['name'] = dataset
             hp_config['dataset']['pair_id'] = [pair_id]
+            hp_config['model']['model'] = model
             hp_config['hyperparameters']['lr']['lower_bound'] = 0.00001
             hp_config['hyperparameters']['lr']['upper_bound'] = 0.01
 
             if pair_id in list(range(6,7+1)):
                 # limited data
                 hp_config['hyperparameters']['seq_length']['lower_bound'] = 5
-                hp_config['hyperparameters']['seq_length']['upper_bound'] = 39
+                hp_config['hyperparameters']['seq_length']['upper_bound'] = 74
                 hp_config['model']['batch_size'] = 5
             elif pair_id in list(range(8,10+1)):
                 # limited burn-in data but not limited training data 
                 hp_config['hyperparameters']['seq_length']['lower_bound'] = 5
-                hp_config['hyperparameters']['seq_length']['upper_bound'] = 39
+                hp_config['hyperparameters']['seq_length']['upper_bound'] = 74
                 hp_config['model']['batch_size'] = 128
             else:
                 # normal data
-                hp_config['hyperparameters']['seq_length']['lower_bound'] = 8
-                hp_config['hyperparameters']['seq_length']['upper_bound'] = 256
+                hp_config['hyperparameters']['seq_length']['lower_bound'] = 5
+                hp_config['hyperparameters']['seq_length']['upper_bound'] = 512
                 hp_config['model']['batch_size'] = 128
 
             if dataset in ['ODE_Lorenz']:

@@ -12,15 +12,15 @@ hyperparameters:
     type: loguniform
     upper_bound: 0.01
   seq_length:
-    lower_bound: 8
+    lower_bound: 5
     type: randint
-    upper_bound: 256
+    upper_bound: 512
 model:
   batch_size: 128
-  epochs: 2
+  epochs: 200
   gradient_clip_val: 1.0
   model: ode-lstm
-  n_trials: 2
+  n_trials: 999999999
   name: spacetime
   seed: 0
   solver: fixed_rk4
