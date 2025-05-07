@@ -1,13 +1,13 @@
 from pathlib import Path
 import yaml
 
-config_path = Path(__file__).parent.parent / 'tuning_config' / 'config_lstm_ODE_Lorenz_1.yaml'
+config_path = Path(__file__).parent.parent / 'tuning_config' / 'config_lstm_Lorenz_Official_1.yaml'
 with open(config_path, 'r') as f:
     hp_config = yaml.safe_load(f)
 print(hp_config)
 
 for model in ['ode-lstm', 'lstm']:
-    for dataset in ['ODE_Lorenz', "PDE_KS"]:
+    for dataset in ['Lorenz_Official', "KS_Official"]:
         for pair_id in range(1,9+1):
 
             # Fill data

@@ -65,7 +65,7 @@ def load_dataset_trainer(args):
         test = data.TensorDataset(test_x, test_ts, test_y)
         return_sequences = True
         batch_size = 64
-    elif args.dataset in ["ODE_Lorenz", "PDE_KS"]:
+    elif args.dataset in ["ODE_Lorenz", "PDE_KS", "Lorenz_Official", "KS_Official"]:
         return_sequences = False
         dataset = CustomData(args)
         train_x = torch.Tensor(dataset.train_events)
@@ -96,7 +96,7 @@ def load_dataset_trainer(args):
     trainloader = data.DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=4)
     testloader = data.DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=4)
     in_features = train_x.size(-1)
-    num_classes = train_x.shape[2] if args.dataset in ["ODE_Lorenz", "PDE_KS"] else int(torch.max(train_y).item() + 1)
+    num_classes = train_x.shape[2] if args.dataset in ["ODE_Lorenz", "PDE_KS", "KS_Official", "Lorenz_Official"] else int(torch.max(train_y).item() + 1)
     return trainloader, testloader, in_features, num_classes, return_sequences, batch_size
 
 
