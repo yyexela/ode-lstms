@@ -73,10 +73,10 @@ ode_lstm.eval()
 if args.pair_id in [2, 4]:
     # Get input data to initialize spacetime
     if args.validation:
-        train_mats, _, init_data = load_validation_dataset(args.dataset, args.pair_id)
+        train_mats, _, init_data = load_validation_dataset(args.dataset, args.pair_id, transpose=True)
         output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0]
     else:
-        train_mats, init_data = load_dataset(args.dataset, args.pair_id)
+        train_mats, init_data = load_dataset(args.dataset, args.pair_id, transpose=True)
         output_timesteps = get_prediction_timesteps(args.dataset, args.pair_id).shape[0]
     train_mat = train_mats[0]
     train_mat = np.swapaxes(train_mat, 0, 1)
@@ -109,7 +109,7 @@ if args.pair_id in [2, 4]:
 else:
     # Get input data to initialize spacetime
     if args.validation:
-        train_mats, _, init_mat = load_validation_dataset(args.dataset, args.pair_id)
+        train_mats, _, init_mat = load_validation_dataset(args.dataset, args.pair_id, transpose=True)
         if args.pair_id in [8,9]:
             train_mat = init_mat
             output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length
@@ -117,7 +117,7 @@ else:
             train_mat = train_mats[0]
             output_timesteps = get_validation_prediction_timesteps(args.dataset, args.pair_id).shape[0]
     else:
-        train_mats, init_mat = load_dataset(args.dataset, args.pair_id)
+        train_mats, init_mat = load_dataset(args.dataset, args.pair_id, transpose=True)
         if args.pair_id in [8,9]:
             train_mat = init_mat
             output_timesteps = get_prediction_timesteps(args.dataset, args.pair_id).shape[0] - args.seq_length

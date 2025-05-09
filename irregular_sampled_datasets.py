@@ -559,9 +559,9 @@ class CustomData:
 
         # Load each dataset and generate windows
         if args.validation:
-            train_mats, _, _ = load_validation_dataset(args.dataset, args.pair_id)
+            train_mats, _, _ = load_validation_dataset(args.dataset, args.pair_id, transpose=True)
         else:
-            train_mats, _ = load_dataset(args.dataset, args.pair_id)
+            train_mats, _ = load_dataset(args.dataset, args.pair_id, transpose=True)
         for i, train_mat in enumerate(train_mats):
             train_mat = np.swapaxes(train_mat, 0, 1)
             train_mat = torch.Tensor(train_mat.astype(np.float32))
